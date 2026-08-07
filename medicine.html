@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SehatSaathi — Medicine Orders & Tracking</title>
+<style>
+/* ============================================================
+   SehatSaathi — design tokens
+   Palette: warm ivory paper, deep companion-teal, saffron marigold
+   accent, muted clay-red for alerts, soft sage for feature cards.
+   Type: Fraunces (display) / Work Sans (body) / JetBrains Mono (data)
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Work+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --paper: #fbf7ee;
+  --paper-dim: #f3ecdc;
+  --ink: #1c2b24;
+  --ink-soft: #4a5850;
+  --teal: #2f5d50;
+  --teal-deep: #1e3d34;
+  --marigold: #e8a33d;
+  --marigold-soft: #f6d9a4;
+  --clay: #c1544c;
+  --sage: #8fa888;
+  --sage-soft: #e2e9dd;
+  --line: #ddd4c0;
+
+  --display: "Fraunces", serif;
+  --body: "Work Sans", sans-serif;
+  --mono: "JetBrains Mono", monospace;
+
+  --max: 1120px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--body);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+}
+
+a { color: inherit; text-decoration: none; }
+img, svg { display: block; max-width: 100%; }
+
+.wrap { max-width: var(--max); margin: 0 auto; padding: 0 28px; }
+
+h1, h2, h3, h4 { font-family: var(--display); font-weight: 600; line-height: 1.1; letter-spacing: -0.01em; color: var(--teal-deep); }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--clay);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.eyebrow::before {
+  content: "";
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--clay);
+  box-shadow: 0 0 0 3px rgba(193,84,76,0.18);
+}
+
+/* -------------------- nav -------------------- */
+.site-header {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(251,247,238,0.88);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.site-header .wrap {
+  display: flex; align-items: center; justify-content: space-between;
+  height: 76px;
+}
+.brand { display: flex; align-items: baseline; gap: 8px; }
+.brand-hi { font-family: var(--display); font-style: italic; font-weight: 500; font-size: 22px; color: var(--marigold); }
+.brand-en { font-family: var(--display); font-weight: 600; font-size: 22px; color: var(--teal-deep); }
+
+.nav-links { display: flex; gap: 4px; list-style: none; align-items: center; }
+.nav-links a {
+  font-family: var(--body); font-weight: 500; font-size: 15px;
+  color: var(--ink-soft); padding: 9px 16px; border-radius: 100px;
+  transition: color .18s ease, background .18s ease;
+}
+.nav-links a:hover { color: var(--teal-deep); background: var(--sage-soft); }
+.nav-links a.active { color: var(--paper); background: var(--teal); }
+
+.nav-toggle { display: none; }
+
+@media (max-width: 720px) {
+  .nav-links { position: fixed; inset: 76px 0 0 0; background: var(--paper); flex-direction: column; align-items: stretch; padding: 18px; gap: 6px; transform: translateY(-8px); opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .2s ease; border-top: 1px solid var(--line); }
+  .nav-links.open { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .nav-links a { display: block; text-align: center; padding: 14px; font-size: 17px; }
+  .nav-toggle { display: block; background: none; border: none; cursor: pointer; padding: 8px; }
+  .nav-toggle span { display: block; width: 22px; height: 2px; background: var(--teal-deep); margin: 5px 0; border-radius: 2px; }
+}
+
+/* -------------------- buttons -------------------- */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--body); font-weight: 600; font-size: 15px;
+  padding: 13px 24px; border-radius: 100px;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+  border: 1px solid transparent;
+}
+.btn-primary { background: var(--teal); color: var(--paper); }
+.btn-primary:hover { background: var(--teal-deep); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(47,93,80,0.28); }
+.btn-ghost { border-color: var(--teal); color: var(--teal-deep); }
+.btn-ghost:hover { background: var(--sage-soft); }
+
+/* -------------------- page header (non-home) -------------------- */
+.page-hero {
+  padding: 64px 0 48px;
+  border-bottom: 1px solid var(--line);
+}
+.page-hero h1 { font-size: clamp(34px, 5vw, 52px); margin-top: 14px; max-width: 16ch; }
+.page-hero p.lead { font-family: var(--body); font-size: 18px; color: var(--ink-soft); max-width: 56ch; margin-top: 16px; }
+
+/* -------------------- home hero -------------------- */
+.hero {
+  padding: 64px 0 40px;
+  display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 48px; align-items: center;
+}
+@media (max-width: 900px) { .hero { grid-template-columns: 1fr; padding-top: 40px; } }
+
+.hero h1 { font-size: clamp(38px, 6vw, 60px); margin-top: 16px; }
+.hero .accent-word { color: var(--marigold); font-style: italic; }
+.hero p.lead { font-size: 18px; color: var(--ink-soft); max-width: 48ch; margin-top: 18px; }
+.hero-actions { display: flex; gap: 14px; margin-top: 30px; flex-wrap: wrap; }
+
+.hero-art { display: flex; justify-content: center; }
+
+/* -------------------- stat strip -------------------- */
+.stat-strip {
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  background: var(--paper-dim);
+}
+.stat-strip .wrap { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+.stat {
+  padding: 26px 20px; text-align: center; border-left: 1px solid var(--line);
+}
+.stat:first-child { border-left: none; }
+.stat .num { font-family: var(--mono); font-size: 26px; color: var(--teal-deep); font-weight: 500; }
+.stat .label { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-soft); margin-top: 6px; }
+@media (max-width: 720px) { .stat-strip .wrap { grid-template-columns: repeat(2, 1fr); } .stat:nth-child(3) { border-left: none; } .stat { border-top: 1px solid var(--line); } .stat:nth-child(1), .stat:nth-child(2) { border-top: none; } }
+
+/* -------------------- generic sections -------------------- */
+section { padding: 76px 0; }
+.section-head { max-width: 62ch; margin-bottom: 44px; }
+.section-head h2 { font-size: clamp(28px, 4vw, 38px); margin-top: 12px; }
+.section-head p { color: var(--ink-soft); font-size: 17px; margin-top: 12px; }
+
+/* -------------------- cards -------------------- */
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; }
+@media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 640px) { .grid-3, .grid-2 { grid-template-columns: 1fr; } }
+
+.card {
+  background: #fff; border: 1px solid var(--line); border-radius: 18px;
+  padding: 28px; transition: transform .2s ease, box-shadow .2s ease;
+}
+.card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(28,43,36,0.08); }
+.card .icon-badge {
+  width: 42px; height: 42px; border-radius: 12px;
+  background: var(--sage-soft); display: flex; align-items: center; justify-content: center;
+  margin-bottom: 16px;
+}
+.card h3 { font-size: 19px; margin-bottom: 8px; }
+.card p { color: var(--ink-soft); font-size: 15px; }
+
+.tag {
+  display: inline-block; font-family: var(--mono); font-size: 11px;
+  padding: 4px 10px; border-radius: 100px; letter-spacing: 0.04em;
+  margin-bottom: 14px; text-transform: uppercase;
+}
+.tag-core { background: var(--sage-soft); color: var(--teal-deep); }
+.tag-proposed { background: var(--marigold-soft); color: #8a5a12; }
+
+/* -------------------- timeline / working steps -------------------- */
+.flow { position: relative; padding-left: 36px; }
+.flow::before { content: ""; position: absolute; left: 9px; top: 6px; bottom: 6px; width: 2px; background: var(--line); }
+.flow-step { position: relative; padding-bottom: 40px; }
+.flow-step:last-child { padding-bottom: 0; }
+.flow-step::before {
+  content: ""; position: absolute; left: -36px; top: 2px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--paper); border: 2px solid var(--teal);
+}
+.flow-step.alert::before { border-color: var(--clay); }
+.flow-step h3 { font-size: 18px; margin-bottom: 6px; }
+.flow-step p { color: var(--ink-soft); font-size: 15px; max-width: 60ch; }
+.flow-step .part {
+  display: inline-block; font-family: var(--mono); font-size: 12px;
+  color: var(--teal); background: var(--sage-soft); padding: 3px 9px; border-radius: 6px; margin-top: 8px;
+}
+
+/* -------------------- spec table -------------------- */
+.spec-table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 14px; }
+.spec-table th { text-align: left; padding: 12px 16px; background: var(--teal-deep); color: var(--paper); font-weight: 500; }
+.spec-table td { padding: 12px 16px; border-bottom: 1px solid var(--line); color: var(--ink-soft); }
+.spec-table tr:nth-child(even) td { background: var(--paper-dim); }
+.spec-wrap { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+
+/* -------------------- team -------------------- */
+.person-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 30px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.person-avatar {
+  width: 56px; height: 56px; border-radius: 14px;
+  background: var(--teal); color: var(--paper);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--display); font-size: 22px; font-weight: 600;
+}
+.person-card h3 { font-size: 20px; }
+.person-role { font-family: var(--mono); font-size: 12px; color: var(--clay); text-transform: uppercase; letter-spacing: 0.05em; }
+.person-card p.bio { color: var(--ink-soft); font-size: 15px; }
+
+/* -------------------- CTA band -------------------- */
+.cta-band {
+  background: var(--teal-deep); color: var(--paper);
+  border-radius: 24px; padding: 56px; text-align: center;
+  margin: 0 28px;
+}
+.cta-band h2 { color: var(--paper); }
+.cta-band p { color: #cfe0da; margin-top: 12px; font-size: 17px; }
+.cta-band .hero-actions { justify-content: center; margin-top: 26px; }
+.cta-band .btn-ghost { border-color: var(--paper); color: var(--paper); }
+.cta-band .btn-ghost:hover { background: rgba(251,247,238,0.1); }
+.cta-band .btn-primary { background: var(--marigold); color: var(--teal-deep); }
+.cta-band .btn-primary:hover { background: #f0b357; box-shadow: none; }
+
+/* -------------------- footer -------------------- */
+footer {
+  border-top: 1px solid var(--line); padding: 40px 0; margin-top: 40px;
+}
+footer .wrap { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+footer .foot-note { font-family: var(--mono); font-size: 12.5px; color: var(--ink-soft); }
+
+/* -------------------- dispenser SVG animation -------------------- */
+.tray-group { animation: tray-slide 5s ease-in-out infinite; }
+@keyframes tray-slide {
+  0%, 20% { transform: translateY(0); }
+  45%, 65% { transform: translateY(34px); }
+  90%, 100% { transform: translateY(0); }
+}
+.led-dot { animation: led-pulse 1.4s ease-in-out infinite; }
+@keyframes led-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+.buzzer-wave { animation: wave-pulse 1.4s ease-in-out infinite; transform-origin: center; }
+@keyframes wave-pulse {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.75; }
+}
+
+/* -------------------- mobile section padding -------------------- */
+@media (max-width: 720px) {
+  section { padding: 52px 0; }
+  .cta-band { padding: 40px 24px; margin: 0 16px; }
+}
+
+/* -------------------- login -------------------- */
+.auth-wrap {
+  min-height: calc(100vh - 76px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px 20px;
+}
+.auth-card {
+  width: 100%; max-width: 400px;
+  background: #fff; border: 1px solid var(--line); border-radius: 20px;
+  padding: 40px 36px;
+}
+.auth-card h1 { font-size: 26px; margin-top: 10px; }
+.auth-card p.sub { color: var(--ink-soft); font-size: 15px; margin-top: 8px; margin-bottom: 26px; }
+.field { margin-bottom: 18px; }
+.field label { display: block; font-family: var(--mono); font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); margin-bottom: 7px; }
+.field input {
+  width: 100%; padding: 12px 14px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--paper-dim);
+  font-family: var(--body); font-size: 15px; color: var(--ink);
+  outline: none; transition: border-color .15s ease;
+}
+.field input:focus { border-color: var(--teal); }
+.auth-card .btn { width: 100%; justify-content: center; margin-top: 6px; }
+.auth-error {
+  display: none; background: #fdf1ee; border: 1px solid var(--clay);
+  color: var(--clay); font-size: 13.5px; padding: 10px 14px; border-radius: 10px;
+  margin-bottom: 16px; font-family: var(--body);
+}
+.auth-error.show { display: block; }
+.auth-hint {
+  margin-top: 22px; padding-top: 18px; border-top: 1px dashed var(--line);
+  font-family: var(--mono); font-size: 12.5px; color: var(--ink-soft); line-height: 1.7;
+}
+.auth-hint b { color: var(--teal-deep); }
+
+/* -------------------- dashboard -------------------- */
+.dash-topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 22px 0; border-bottom: 1px solid var(--line); margin-bottom: 36px;
+}
+.dash-user { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 13px; color: var(--ink-soft); }
+.status-pill { display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12px; padding: 5px 12px; border-radius: 100px; background: var(--sage-soft); color: var(--teal-deep); }
+.status-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); }
+
+.dash-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; margin-bottom: 44px; }
+.dash-stats.dash-stats-4 { grid-template-columns: repeat(4,1fr); }
+@media (max-width: 900px) { .dash-stats.dash-stats-4 { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 720px) { .dash-stats { grid-template-columns: 1fr; } }
+.dash-stat { background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px 22px; }
+.dash-stat .label { font-family: var(--mono); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-soft); }
+.dash-stat .value { font-family: var(--display); font-size: 26px; color: var(--teal-deep); margin-top: 6px; }
+
+.dash-main { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+@media (max-width: 900px) { .dash-main { grid-template-columns: 1fr; } }
+
+.dose-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; margin-bottom: 12px; background: #fff;
+}
+.dose-info { display: flex; align-items: center; gap: 12px; }
+.dose-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--sage); }
+.dose-row.taken .dose-dot { background: var(--teal); }
+.dose-name { font-weight: 600; font-size: 15px; }
+.dose-time { font-family: var(--mono); font-size: 12.5px; color: var(--ink-soft); }
+.dose-badge { font-family: var(--mono); font-size: 11px; text-transform: uppercase; padding: 4px 10px; border-radius: 100px; background: var(--marigold-soft); color: #8a5a12; }
+.dose-row.taken .dose-badge { background: var(--sage-soft); color: var(--teal-deep); }
+.dose-row button {
+  font-family: var(--body); font-weight: 600; font-size: 13.5px;
+  padding: 9px 16px; border-radius: 100px; border: 1px solid var(--teal); color: var(--teal-deep); background: transparent; cursor: pointer;
+  transition: background .15s ease;
+}
+.dose-row button:hover:not(:disabled) { background: var(--sage-soft); }
+.dose-row button:disabled { opacity: 0.4; cursor: not-allowed; }
+.dose-row button.taken-btn { background: var(--teal); color: #fff; }
+.dose-row button.taken-btn:hover { background: var(--teal-deep); }
+
+.dash-device { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 28px; text-align: center; }
+.dash-status-line { font-family: var(--mono); font-size: 13px; color: var(--ink-soft); margin-top: 14px; min-height: 18px; }
+
+.dash-tray-group { transition: transform .6s cubic-bezier(.4,0,.2,1); }
+.dash-tray-group.out { transform: translateY(40px); }
+.dash-led.active { animation: led-pulse .6s ease-in-out infinite; }
+.dash-buzzer.active { animation: wave-pulse .6s ease-in-out infinite; }
+
+.log-list { list-style: none; margin-top: 14px; }
+.log-list li {
+  font-family: var(--mono); font-size: 12.5px; color: var(--ink-soft);
+  padding: 10px 0; border-bottom: 1px dashed var(--line);
+}
+.log-list li:last-child { border-bottom: none; }
+.log-empty { font-family: var(--mono); font-size: 13px; color: var(--ink-soft); padding: 16px 0; }
+.log-clear { margin-top: 14px; background: none; border: none; font-family: var(--mono); font-size: 12px; color: var(--clay); cursor: pointer; text-decoration: underline; padding: 0; }
+
+/* -------------------- order medicine -------------------- */
+.order-layout { display: grid; grid-template-columns: 1fr 340px; gap: 40px; align-items: start; }
+@media (max-width: 900px) { .order-layout { grid-template-columns: 1fr; } }
+
+.med-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
+@media (max-width: 640px) { .med-grid { grid-template-columns: 1fr; } }
+
+.med-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 20px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.med-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.med-icon {
+  width: 42px; height: 42px; border-radius: 12px; background: var(--sage-soft);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.med-name { font-weight: 600; font-size: 15.5px; }
+.med-desc { font-family: var(--body); font-size: 13px; color: var(--ink-soft); }
+.med-meta { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 6px; }
+.med-price { font-family: var(--mono); font-size: 15px; color: var(--teal-deep); font-weight: 500; }
+.med-stock { font-family: var(--mono); font-size: 11px; text-transform: uppercase; padding: 3px 9px; border-radius: 100px; background: var(--sage-soft); color: var(--teal-deep); }
+.med-stock.low { background: #fdf1ee; color: var(--clay); }
+
+.qty-row { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.qty-stepper { display: flex; align-items: center; border: 1px solid var(--line); border-radius: 100px; overflow: hidden; }
+.qty-stepper button { width: 30px; height: 30px; border: none; background: var(--paper-dim); font-size: 16px; cursor: pointer; color: var(--teal-deep); }
+.qty-stepper span { width: 28px; text-align: center; font-family: var(--mono); font-size: 13px; }
+.med-card .btn { padding: 9px 16px; font-size: 13.5px; }
+
+.cart-panel {
+  background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 24px;
+  position: sticky; top: 96px;
+}
+.cart-panel h2 { font-size: 18px; margin-bottom: 16px; }
+.cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+.cart-item:last-of-type { border-bottom: none; }
+.cart-item .ci-name { font-weight: 500; }
+.cart-item .ci-sub { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
+.cart-empty { font-family: var(--mono); font-size: 13px; color: var(--ink-soft); padding: 10px 0; }
+.cart-total { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; margin-top: 8px; border-top: 1px solid var(--line); font-weight: 600; }
+.cart-total .amount { font-family: var(--mono); font-size: 18px; color: var(--teal-deep); }
+.cart-panel .btn { width: 100%; justify-content: center; margin-top: 16px; }
+
+.order-confirm {
+  background: var(--sage-soft); border: 1px solid var(--sage); border-radius: 14px;
+  padding: 16px 18px; margin-top: 16px; font-size: 13.5px; color: var(--teal-deep);
+  display: none;
+}
+.order-confirm.show { display: block; }
+.order-confirm .oid { font-family: var(--mono); font-weight: 500; }
+
+.order-history { margin-top: 44px; }
+.oh-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 14px 18px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 10px; background: #fff;
+  font-size: 14px;
+}
+.oh-row .oh-id { font-family: var(--mono); font-size: 12.5px; color: var(--ink-soft); }
+.oh-row .oh-amt { font-family: var(--mono); color: var(--teal-deep); }
+
+/* -------------------- category tabs -------------------- */
+.cat-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.cat-tab {
+  font-family: var(--body); font-weight: 500; font-size: 13.5px;
+  padding: 8px 16px; border-radius: 100px; border: 1px solid var(--line);
+  background: #fff; color: var(--ink-soft); cursor: pointer; transition: all .15s ease;
+}
+.cat-tab.active { background: var(--teal); border-color: var(--teal); color: #fff; }
+.med-tag { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--sage); }
+.med-tag.remedy { color: var(--marigold); }
+
+/* -------------------- order tracking -------------------- */
+.oh-row { display: flex; flex-direction: column; align-items: stretch; gap: 4px; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+.oh-top { display: flex; justify-content: space-between; align-items: center; }
+.tracking-steps { display: flex; align-items: center; gap: 5px; margin-top: 12px; }
+.t-step { flex: 1; height: 4px; border-radius: 2px; background: var(--line); transition: background .3s ease; }
+.t-step.done { background: var(--teal); }
+.t-labels { display: flex; justify-content: space-between; margin-top: 6px; }
+.t-labels span { font-family: var(--mono); font-size: 9.5px; color: var(--ink-soft); flex: 1; text-align: center; }
+.t-labels span:first-child { text-align: left; }
+.t-labels span:last-child { text-align: right; }
+.t-current { font-family: var(--mono); font-size: 12px; color: var(--teal-deep); margin-top: 10px; }
+
+/* -------------------- assistant, symptoms, doctors, GPS -------------------- */
+.feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 36px; }
+@media (max-width: 1000px) { .feature-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .feature-grid { grid-template-columns: 1fr; } }
+.feature-card { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 22px; cursor: pointer; transition: transform .2s ease, box-shadow .2s ease; }
+.feature-card:hover { transform: translateY(-3px); box-shadow: 0 14px 30px rgba(28,43,36,0.08); }
+.feature-card h3 { font-size: 16px; margin-bottom: 6px; }
+.feature-card p { font-size: 13.5px; color: var(--ink-soft); }
+.feature-icon { width: 46px; height: 46px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; background: var(--sage-soft); }
+
+.tool-layout { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 28px; align-items: start; }
+@media (max-width: 900px) { .tool-layout { grid-template-columns: 1fr; } }
+.tool-panel { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 24px; }
+.tool-panel h2 { font-size: 19px; margin-bottom: 12px; }
+.tool-panel p { color: var(--ink-soft); font-size: 14.5px; }
+
+.ai-chat-container { display: flex; flex-direction: column; height: 420px; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; background: #fff; }
+.ai-chat-messages { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.ai-message { max-width: 86%; padding: 12px 16px; border-radius: 16px; font-size: 14px; line-height: 1.5; }
+.ai-message.user { align-self: flex-end; background: var(--teal); color: #fff; border-bottom-right-radius: 5px; }
+.ai-message.bot { align-self: flex-start; background: var(--sage-soft); color: var(--teal-deep); border-bottom-left-radius: 5px; }
+.ai-chat-input-area { display: flex; gap: 8px; padding: 14px; border-top: 1px solid var(--line); background: var(--paper-dim); }
+.ai-chat-input-area input { flex: 1; min-width: 0; padding: 11px 14px; border-radius: 100px; border: 1px solid var(--line); font-family: var(--body); font-size: 14px; outline: none; }
+.ai-chat-input-area button { padding: 10px 18px; border-radius: 100px; background: var(--teal); color: #fff; border: none; cursor: pointer; font-weight: 600; }
+.ai-suggestions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.ai-suggestion { padding: 8px 13px; border-radius: 100px; border: 1px solid var(--line); background: #fff; font-size: 13px; cursor: pointer; }
+.ai-suggestion:hover { background: var(--sage-soft); border-color: var(--teal); }
+
+.symptom-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0; }
+@media (max-width: 700px) { .symptom-grid { grid-template-columns: 1fr; } }
+.symptom-grid label { display: flex; align-items: center; gap: 8px; background: var(--paper-dim); border: 1px solid var(--line); border-radius: 12px; padding: 11px 12px; font-size: 14px; cursor: pointer; }
+.symptom-result { display: none; margin-top: 16px; border-radius: 16px; padding: 18px; border: 1px solid var(--line); background: var(--sage-soft); }
+.symptom-result.show { display: block; }
+.symptom-result.urgent { background: #fdf1ee; border-color: var(--clay); }
+.symptom-result h3 { font-size: 17px; margin-bottom: 8px; }
+.symptom-result ul { margin: 10px 0 0 18px; color: var(--ink-soft); font-size: 14px; }
+
+.doctor-filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+.doctor-filters select { padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: #fff; font-family: var(--body); color: var(--ink); }
+.doctor-list { display: grid; gap: 14px; }
+.appt-card { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 20px; display: flex; gap: 16px; align-items: flex-start; }
+.doc-avatar { width: 56px; height: 56px; border-radius: 15px; background: var(--teal); color: var(--paper); display: flex; align-items: center; justify-content: center; font-family: var(--display); font-size: 22px; font-weight: 600; flex-shrink: 0; }
+.appt-info { flex: 1; min-width: 0; }
+.appt-info h3 { font-size: 18px; margin-bottom: 4px; }
+.appt-meta { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); margin-bottom: 6px; }
+.appt-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.appt-actions .btn { padding: 8px 13px; font-size: 12.5px; }
+.booked-list { list-style: none; margin-top: 12px; }
+.booked-list li { border-bottom: 1px dashed var(--line); padding: 10px 0; font-size: 13.5px; color: var(--ink-soft); }
+
+.gps-card { margin-top: 12px; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--paper-dim); }
+.gps-map { position: relative; height: 138px; background: linear-gradient(135deg, #dce8f2, #e2e9dd); overflow: hidden; }
+.gps-map::before { content: ""; position: absolute; inset: 22px; border: 2px dashed rgba(47,93,80,0.35); border-radius: 40px; transform: rotate(-7deg); }
+.gps-road { position: absolute; left: 11%; right: 11%; top: 50%; height: 6px; margin-top: -3px; background: rgba(30,61,52,0.25); border-radius: 999px; }
+.gps-pin { position: absolute; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50% 50% 50% 0; background: var(--clay); transform: rotate(-45deg); box-shadow: 0 0 0 5px rgba(193,84,76,0.18); transition: left .35s ease; }
+.gps-pin::after { content: ""; position: absolute; width: 6px; height: 6px; border-radius: 50%; background: #fff; left: 6px; top: 6px; }
+.gps-label { position: absolute; left: 16px; bottom: 14px; right: 16px; font-family: var(--mono); font-size: 11px; color: var(--teal-deep); background: rgba(251,247,238,0.78); border-radius: 10px; padding: 7px 9px; }
+.gps-meta { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); }
+.gps-meta span { background: #fff; padding: 10px; font-family: var(--mono); font-size: 11px; color: var(--ink-soft); }
+.gps-actions { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px; background: #fff; }
+.gps-actions a { font-size: 12.5px; padding: 8px 12px; }
+
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="brand-hi">Sehat</span><span class="brand-en">Saathi</span></a>
+    <button class="nav-toggle" aria-label="Toggle menu"><span></span><span></span><span></span></button>
+    <ul class="nav-links">
+      <li><a href="#" data-view="dashboardView" id="navDash">Dashboard</a></li>
+      <li><a href="#" data-view="orderView" id="navOrder">Order Medicine</a></li>
+      <li><a href="#" data-view="aiAssistantView">AI Assistant</a></li>
+      <li><a href="#" data-view="symptomCheckerView">Symptom Checker</a></li>
+      <li><a href="#" data-view="appointmentsView">Appointments</a></li>
+      <li><a href="#" data-view="profileView">Profile & Care</a></li>
+    </ul>
+  </div>
+</header>
+<main>
+
+<div class="auth-wrap" id="loginView">
+    <div class="auth-card">
+      <span class="eyebrow">Dashboard</span>
+      <h1>Log in</h1>
+      <p class="sub">Access the live SehatSaathi dispenser dashboard.</p>
+      <div class="auth-error" id="authError">Incorrect username or password. Try again.</div>
+      <form id="loginForm">
+        <div class="field">
+          <label for="username">Username</label>
+          <input type="text" id="username" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input type="password" id="password" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Log in</button>
+      </form>
+      <div class="auth-hint">
+        Demo login for exhibition/judging use —<br>
+        Username: <b>admin</b> &nbsp; Password: <b>sehatsaathi</b>
+      </div>
+    </div>
+</div>
+
+<div id="dashboardView" class="preview-view" style="display:none;">
+<div class="wrap" style="padding-top: 8px;">
+
+  <div class="wrap" style="padding-top: 8px;">
+    <div class="dash-topbar">
+      <div>
+        <span class="eyebrow">Dashboard</span>
+        <h1 style="margin-top:8px; font-size:26px;">Today's schedule</h1>
+      </div>
+      <div class="dash-user">
+        <span class="status-pill"><span class="dot"></span>Device online</span>
+        <span id="userTag"></span>
+        <a href="#" id="logoutBtn" class="btn btn-ghost" style="padding:8px 16px; font-size:13px;">Log out</a>
+      </div>
+    </div>
+
+    <div class="dash-stats dash-stats-4">
+      <div class="dash-stat">
+        <div class="label">Doses taken today</div>
+        <div class="value" id="statTaken">0 / 3</div>
+      </div>
+      <div class="dash-stat">
+        <div class="label">Next dose</div>
+        <div class="value" id="statNext">Morning · 08:00 AM</div>
+      </div>
+      <div class="dash-stat">
+        <div class="label">Device status</div>
+        <div class="value" style="color:var(--teal);">Online</div>
+      </div>
+      <div class="dash-stat">
+        <div class="label">Orders in transit</div>
+        <div class="value" id="statOrders">0</div>
+      </div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature-card" data-view="aiAssistantView">
+        <div class="feature-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2f5d50" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg>
+        </div>
+        <h3>AI Assistant</h3>
+        <p>Ask health, medicine, refill, and appointment questions.</p>
+      </div>
+      <div class="feature-card" data-view="symptomCheckerView">
+        <div class="feature-icon" style="background: var(--marigold-soft);">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8a5a12" stroke-width="2"><path d="M10 2v6H4v4h6v6h4v-6h6V8h-6V2z"/></svg>
+        </div>
+        <h3>Symptom Checker</h3>
+        <p>Select symptoms and get first-aid style guidance.</p>
+      </div>
+      <div class="feature-card" data-view="appointmentsView">
+        <div class="feature-icon" style="background: #fdf1ee;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c1544c" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        </div>
+        <h3>Doctor Appointments</h3>
+        <p>Choose from multiple doctors with phone and location.</p>
+      </div>
+      <div class="feature-card" data-view="orderView">
+        <div class="feature-icon" style="background: #dce8f2;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4a7ba7" stroke-width="2"><path d="M21 10c0 7-9 12-9 12S3 17 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <h3>GPS Order Tracking</h3>
+        <p>Track medicine delivery status and live location.</p>
+      </div>
+    </div>
+
+    <div class="dash-main">
+      <div>
+        <h2 style="font-size:19px; margin-bottom:16px;">Dose slots</h2>
+        <div id="doseList"></div>
+
+        <h2 style="font-size:19px; margin: 32px 0 4px;">Activity log</h2>
+        <ul class="log-list" id="logList"></ul>
+        <p class="log-empty" id="logEmpty">No activity yet — trigger a dose slot above to see it here.</p>
+        <button class="log-clear" id="clearLog">Clear log</button>
+
+        <div style="display:flex; align-items:center; justify-content:space-between; margin: 32px 0 4px;">
+          <h2 style="font-size:19px;">Recent orders</h2>
+          <a href="#" data-view="orderView" class="btn btn-ghost" style="padding:8px 14px; font-size:12.5px;">Order more</a>
+        </div>
+        <div id="orderTrackingList"></div>
+        <p class="log-empty" id="orderTrackingEmpty">No orders yet — visit Order Medicine to refill compartments.</p>
+      </div>
+
+      <div class="dash-device">
+        <span class="eyebrow">Live device view</span>
+        <svg viewBox="0 0 380 300" width="100%" style="margin-top:18px;" role="img" aria-label="Interactive illustration of the dispenser">
+          <rect x="45" y="16" width="290" height="90" rx="16" fill="#1e3d34"/>
+          <rect x="68" y="34" width="120" height="30" rx="6" fill="#fbf7ee"/>
+          <text x="82" y="54" font-family="JetBrains Mono, monospace" font-size="13" fill="#1c2b24" id="clockText">--:--</text>
+          <circle class="dash-led" id="dashLed" cx="300" cy="42" r="8" fill="#e8a33d"/>
+          <text x="278" y="72" font-family="JetBrains Mono, monospace" font-size="10" fill="#cfe0da">LED</text>
+          <g class="dash-buzzer" id="dashBuzzer" stroke="#c1544c" stroke-width="2.5" fill="none" stroke-linecap="round">
+            <path d="M268 86 q6 -8 0 -16"/>
+            <path d="M276 90 q11 -14 0 -28"/>
+          </g>
+          <circle cx="260" cy="82" r="4" fill="#c1544c"/>
+
+          <g class="dash-tray-group" id="dashTray">
+            <rect x="72" y="96" width="236" height="86" rx="14" fill="#ffffff" stroke="#ddd4c0" stroke-width="2"/>
+            <g font-family="JetBrains Mono, monospace" font-size="10" fill="#4a5850" text-anchor="middle">
+              <rect x="90" y="112" width="48" height="48" rx="11" fill="#e2e9dd"/>
+              <circle cx="114" cy="136" r="8" fill="#e8a33d"/>
+              <text x="114" y="173">MORN</text>
+
+              <rect x="150" y="112" width="48" height="48" rx="11" fill="#e2e9dd"/>
+              <circle cx="174" cy="136" r="8" fill="#8fa888"/>
+              <text x="174" y="173">NOON</text>
+
+              <rect x="210" y="112" width="48" height="48" rx="11" fill="#e2e9dd"/>
+              <circle cx="234" cy="136" r="8" fill="#c1544c"/>
+              <text x="234" y="173">EVE</text>
+            </g>
+          </g>
+
+          <rect x="45" y="192" width="290" height="18" rx="9" fill="#ddd4c0"/>
+        </svg>
+        <p class="dash-status-line" id="dashStatusLine">Waiting for scheduled dose time…</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+<div id="orderView" class="preview-view" style="display:none;">
+<div class="wrap" style="padding-top: 8px;">
+
+  <div class="wrap" style="padding-top: 8px;">
+    <div class="dash-topbar">
+      <div>
+        <span class="eyebrow">Refills</span>
+        <h1 style="margin-top:8px; font-size:26px;">Order medicine</h1>
+      </div>
+      <a href="#" data-view="dashboardView" class="btn btn-ghost" style="padding:10px 18px; font-size:13.5px;">Back to dashboard</a>
+    </div>
+
+    <div class="order-layout">
+      <div>
+        <p style="color:var(--ink-soft); font-size:15px; margin-bottom:18px; max-width:56ch;">Refill the compartments in your dispenser, or stock up on trusted home remedies. Add items to your cart and place a mock order — this is a demo checkout with no real payment.</p>
+        <div class="cat-tabs" id="catTabs">
+          <button class="cat-tab active" data-cat="all">All</button>
+          <button class="cat-tab" data-cat="medicine">Medicines</button>
+          <button class="cat-tab" data-cat="remedy">Home Remedies</button>
+        </div>
+        <div class="med-grid" id="medGrid"></div>
+
+        <div class="order-history">
+          <h2 style="font-size:19px; margin-bottom:14px;">Order history</h2>
+          <div id="orderHistoryList"></div>
+          <p class="cart-empty" id="ohEmpty">No orders placed yet.</p>
+        </div>
+      </div>
+
+      <div class="cart-panel">
+        <h2>Your cart</h2>
+        <div id="cartItems"></div>
+        <p class="cart-empty" id="cartEmpty">Cart is empty — add a medicine to get started.</p>
+        <div class="cart-total">
+          <span>Total</span>
+          <span class="amount" id="cartTotal">₹0</span>
+        </div>
+        <div class="field" style="margin-top:16px;">
+          <label for="deliveryLocation">Delivery location</label>
+          <input type="text" id="deliveryLocation" value="High Vision International School, Delhi Road" placeholder="Enter delivery location">
+        </div>
+        <button class="btn btn-ghost" id="useGpsBtn" type="button" style="width:100%; justify-content:center; margin-bottom:10px;">Use GPS location</button>
+        <button class="btn btn-primary" id="placeOrderBtn">Place order</button>
+        <div class="order-confirm" id="orderConfirm">
+          Order placed! ID <span class="oid" id="orderId"></span> — GPS demo tracking has started.
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div id="aiAssistantView" class="preview-view" style="display:none;">
+  <div class="wrap" style="padding-top: 8px;">
+    <div class="dash-topbar">
+      <div>
+        <span class="eyebrow">AI Assistant</span>
+        <h1 style="margin-top:8px; font-size:26px;">Ask SehatSaathi</h1>
+      </div>
+      <a href="#" data-view="dashboardView" class="btn btn-ghost" style="padding:10px 18px; font-size:13.5px;">Back to dashboard</a>
+    </div>
+
+    <div class="tool-layout">
+      <div>
+        <div class="ai-chat-container">
+          <div class="ai-chat-messages" id="aiMessages"></div>
+          <div class="ai-chat-input-area">
+            <input type="text" id="aiInput" placeholder="Ask about fever, medicine timing, refill, appointment...">
+            <button type="button" id="aiSendBtn">Send</button>
+          </div>
+        </div>
+        <div class="ai-suggestions">
+          <button class="ai-suggestion" type="button">I have fever and headache</button>
+          <button class="ai-suggestion" type="button">When should I take my medicine?</button>
+          <button class="ai-suggestion" type="button">Book a doctor near me</button>
+          <button class="ai-suggestion" type="button">Track my medicine order</button>
+        </div>
+      </div>
+      <div class="tool-panel">
+        <h2>Safe guidance</h2>
+        <p>This demo assistant gives basic guidance for the school project. For severe symptoms, emergency warning signs, or prescribed medicine changes, contact a doctor.</p>
+        <div class="gps-card">
+          <div class="gps-map">
+            <div class="gps-road"></div>
+            <div class="gps-pin" style="left:68%;"></div>
+            <div class="gps-label">Assistant can connect symptoms, appointments, refills, and order status.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="symptomCheckerView" class="preview-view" style="display:none;">
+  <div class="wrap" style="padding-top: 8px;">
+    <div class="dash-topbar">
+      <div>
+        <span class="eyebrow">Symptom Checker</span>
+        <h1 style="margin-top:8px; font-size:26px;">Check common symptoms</h1>
+      </div>
+      <a href="#" data-view="dashboardView" class="btn btn-ghost" style="padding:10px 18px; font-size:13.5px;">Back to dashboard</a>
+    </div>
+
+    <div class="tool-layout">
+      <div class="tool-panel">
+        <h2>Select symptoms</h2>
+        <p>Choose all that apply. This is not a diagnosis; it helps decide what basic next step to take.</p>
+        <div class="symptom-grid" id="symptomOptions">
+          <label><input type="checkbox" value="fever"> Fever</label>
+          <label><input type="checkbox" value="cough"> Cough</label>
+          <label><input type="checkbox" value="cold"> Cold / runny nose</label>
+          <label><input type="checkbox" value="headache"> Headache</label>
+          <label><input type="checkbox" value="stomach"> Stomach pain</label>
+          <label><input type="checkbox" value="vomiting"> Vomiting</label>
+          <label><input type="checkbox" value="allergy"> Allergy / itching</label>
+          <label><input type="checkbox" value="bodypain"> Body pain</label>
+          <label><input type="checkbox" value="breathing"> Breathing trouble</label>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="symptomAge">Age</label>
+            <input type="number" id="symptomAge" min="1" max="110" placeholder="Example: 45">
+          </div>
+          <div class="field">
+            <label for="symptomDuration">Duration</label>
+            <input type="text" id="symptomDuration" placeholder="Example: 2 days">
+          </div>
+        </div>
+        <button type="button" class="btn btn-primary" id="checkSymptomsBtn">Check symptoms</button>
+        <div class="symptom-result" id="symptomResult"></div>
+      </div>
+
+      <div class="tool-panel">
+        <h2>Emergency signs</h2>
+        <p>Get medical help quickly for breathing trouble, chest pain, fainting, confusion, blue lips, severe dehydration, or very high fever.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="appointmentsView" class="preview-view" style="display:none;">
+  <div class="wrap" style="padding-top: 8px;">
+    <div class="dash-topbar">
+      <div>
+        <span class="eyebrow">Appointments</span>
+        <h1 style="margin-top:8px; font-size:26px;">Doctors near you</h1>
+      </div>
+      <a href="#" data-view="dashboardView" class="btn btn-ghost" style="padding:10px 18px; font-size:13.5px;">Back to dashboard</a>
+    </div>
+
+    <div class="tool-layout">
+      <div>
+        <div class="doctor-filters">
+          <select id="specialtyFilter">
+            <option value="all">All specialities</option>
+            <option value="General Physician">General Physician</option>
+            <option value="Pediatrician">Pediatrician</option>
+            <option value="Cardiologist">Cardiologist</option>
+            <option value="Dermatologist">Dermatologist</option>
+            <option value="Orthopedic">Orthopedic</option>
+          </select>
+          <select id="locationFilter">
+            <option value="all">All locations</option>
+            <option value="Rohini">Rohini</option>
+            <option value="Pitampura">Pitampura</option>
+            <option value="Dwarka">Dwarka</option>
+            <option value="Paschim Vihar">Paschim Vihar</option>
+          </select>
+        </div>
+        <div class="doctor-list" id="doctorList"></div>
+      </div>
+
+      <div class="tool-panel">
+        <h2>Booked appointments</h2>
+        <p id="appointmentStatus">No appointment booked yet.</p>
+        <ul class="booked-list" id="bookedAppointments"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="profileView" class="preview-view" style="display:none;">
+  <div class="wrap" style="padding-top: 8px;">
+    <div class="dash-topbar">
+      <div>
+        <span class="eyebrow">Profile & Care</span>
+        <h1 style="margin-top:8px; font-size:26px;">Patient profile</h1>
+      </div>
+      <a href="#" data-view="dashboardView" class="btn btn-ghost" style="padding:10px 18px; font-size:13.5px;">Back to dashboard</a>
+    </div>
+    <div class="grid-2">
+      <div class="tool-panel">
+        <h2>Care contact</h2>
+        <p><b>Name:</b> Family caregiver</p>
+        <p><b>Phone:</b> +91 98765 12000</p>
+        <p><b>Address:</b> High Vision International School demo booth</p>
+      </div>
+      <div class="tool-panel">
+        <h2>Medical note</h2>
+        <p>Use the dashboard to select medicines after placing an order. Dose slots then trigger buzzer, LED, tray, and activity log events.</p>
+      </div>
+    </div>
+  </div>
+</div>
+</main>
+<footer>
+  <div class="wrap">
+    <span class="foot-note">SehatSaathi — WSRO Project, High Vision International School</span>
+    <span class="foot-note">Sarthak &amp; Rudra</span>
+  </div>
+</footer>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var toggle = document.querySelector('.nav-toggle');
+  var links = document.querySelector('.nav-links');
+  if (toggle && links) {
+    toggle.addEventListener('click', function () {
+      links.classList.toggle('open');
+    });
+    links.querySelectorAll('a').forEach(function (a) {
+      a.addEventListener('click', function () { links.classList.remove('open'); });
+    });
+  }
+});
+
+
+// --- inline demo auth for the local exhibition build ---
+var SS_DEMO_USER = 'admin';
+var SS_DEMO_PASS = 'sehatsaathi';
+var loggedIn = localStorage.getItem('ss_logged_in') === 'true' || sessionStorage.getItem('sehatsaathiLoggedIn') === 'true';
+var dashboardReady = false;
+var orderReady = false;
+var aiReady = false;
+var symptomReady = false;
+var appointmentsReady = false;
+
+function showView(id) {
+  if (!loggedIn && id !== 'loginView') id = 'loginView';
+
+  var loginView = document.getElementById('loginView');
+  loginView.style.display = (id === 'loginView') ? 'flex' : 'none';
+  document.querySelectorAll('.preview-view').forEach(function(v){ v.style.display = 'none'; });
+  if (id !== 'loginView') {
+    var target = document.getElementById(id);
+    if (target) target.style.display = 'block';
+  }
+
+  document.querySelectorAll('[data-view]').forEach(function (a) {
+    a.classList.toggle('active', a.getAttribute('data-view') === id);
+  });
+
+  if (id === 'dashboardView') initDashboard();
+  if (id === 'orderView') initOrder();
+  if (id === 'aiAssistantView') initAI();
+  if (id === 'symptomCheckerView') initSymptomChecker();
+  if (id === 'appointmentsView') initAppointments();
+}
+
+document.getElementById('loginForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var u = document.getElementById('username').value.trim();
+  var p = document.getElementById('password').value;
+  if (u === SS_DEMO_USER && p === SS_DEMO_PASS) {
+    loggedIn = true;
+    localStorage.setItem('ss_logged_in', 'true');
+    localStorage.setItem('ss_user', u);
+    sessionStorage.setItem('sehatsaathiLoggedIn', 'true');
+    showView('dashboardView');
+  } else {
+    document.getElementById('authError').classList.add('show');
+  }
+});
+
+document.querySelectorAll('[data-view]').forEach(function (a) {
+  a.addEventListener('click', function (e) {
+    e.preventDefault();
+    var target = a.getAttribute('data-view');
+    if (target !== 'loginView' && !loggedIn) { showView('loginView'); return; }
+    showView(target);
+  });
+});
+
+// Shared demo data store (localStorage-backed) so the Order page and
+// Dashboard page can see the same orders and medicine list.
+
+var TRACKING_STAGES = ['Order placed', 'Packed', 'Rider assigned', 'Out for delivery', 'Near you', 'Delivered'];
+var DELIVERY_ROUTE = [
+  { location: 'SehatSaathi Pharmacy Counter', eta: '35 min', coords: '28.7041, 77.1025', distance: '8.5 km' },
+  { location: 'Pharmacy packing desk', eta: '30 min', coords: '28.7030, 77.1090', distance: '7.8 km' },
+  { location: 'Rider pickup gate', eta: '24 min', coords: '28.6989, 77.1242', distance: '6.2 km' },
+  { location: 'Main road delivery route', eta: '15 min', coords: '28.6892, 77.1487', distance: '3.6 km' },
+  { location: 'Near your delivery location', eta: '5 min', coords: '28.6810, 77.1685', distance: '700 m' },
+  { location: 'Reached delivery location', eta: 'Delivered', coords: '28.6791, 77.1709', distance: '0 m' }
+];
+
+function ssGetOrders() {
+  try { return JSON.parse(localStorage.getItem('ss_orders') || '[]'); } catch (e) { return []; }
+}
+function ssSaveOrders(orders) {
+  localStorage.setItem('ss_orders', JSON.stringify(orders));
+}
+function ssGetOwnedMeds() {
+  try { return JSON.parse(localStorage.getItem('ss_owned_meds') || '[]'); } catch (e) { return []; }
+}
+function ssSaveOwnedMeds(meds) {
+  localStorage.setItem('ss_owned_meds', JSON.stringify(meds));
+}
+function routePoint(stage) {
+  return DELIVERY_ROUTE[Math.min(stage || 0, DELIVERY_ROUTE.length - 1)];
+}
+
+function hydrateOrderTracking(order) {
+  var point = routePoint(order.stage);
+  order.location = point.location;
+  order.eta = point.eta;
+  order.coords = point.coords;
+  order.distance = point.distance;
+  order.riderPhone = order.riderPhone || '+91 98765 43210';
+  order.pharmacyPhone = order.pharmacyPhone || '+91 98100 11223';
+  return order;
+}
+
+function ssAdvanceOrderTracking() {
+  var orders = ssGetOrders();
+  var changed = false;
+  orders.forEach(function (o) {
+    if (o.stage < TRACKING_STAGES.length - 1) {
+      o.stage++;
+      hydrateOrderTracking(o);
+      changed = true;
+    } else {
+      hydrateOrderTracking(o);
+    }
+  });
+  if (changed) ssSaveOrders(orders);
+  return changed;
+}
+function ssGetDoseMeds() {
+  try { return JSON.parse(localStorage.getItem('ss_dose_meds') || '{}'); } catch (e) { return {}; }
+}
+function ssSaveDoseMeds(map) {
+  localStorage.setItem('ss_dose_meds', JSON.stringify(map));
+}
+
+function trackingHtml(order) {
+  hydrateOrderTracking(order);
+  var stage = Math.min(order.stage || 0, TRACKING_STAGES.length - 1);
+  var progress = Math.max(8, Math.min(92, Math.round((stage / (TRACKING_STAGES.length - 1)) * 84) + 8));
+  var stepsHtml = TRACKING_STAGES.map(function (s, i) {
+    return '<div class="t-step' + (i <= stage ? ' done' : '') + '"></div>';
+  }).join('');
+  var labelsHtml = TRACKING_STAGES.map(function (s) { return '<span>' + s + '</span>'; }).join('');
+  var mapQuery = encodeURIComponent((order.location || '') + ' ' + (order.deliveryLocation || ''));
+
+  return '' +
+    '<div class="oh-top">' +
+      '<div><div>' + order.itemSummary + '</div><div class="oh-id">' + order.id + ' · placed ' + order.time + '</div></div>' +
+      '<span class="oh-amt">₹' + order.total + '</span>' +
+    '</div>' +
+    '<div class="tracking-steps">' + stepsHtml + '</div>' +
+    '<div class="t-labels">' + labelsHtml + '</div>' +
+    '<div class="t-current">' + (stage === TRACKING_STAGES.length - 1 ? 'Delivered ✓' : 'Current status: ' + TRACKING_STAGES[stage]) + '</div>' +
+    '<div class="gps-card">' +
+      '<div class="gps-map">' +
+        '<div class="gps-road"></div>' +
+        '<div class="gps-pin" style="left:' + progress + '%;"></div>' +
+        '<div class="gps-label">' + order.location + ' · GPS ' + order.coords + '</div>' +
+      '</div>' +
+      '<div class="gps-meta">' +
+        '<span>ETA: ' + order.eta + '</span>' +
+        '<span>Distance: ' + order.distance + '</span>' +
+        '<span>To: ' + (order.deliveryLocation || 'Saved address') + '</span>' +
+      '</div>' +
+      '<div class="gps-actions">' +
+        '<a class="btn btn-ghost" href="https://www.google.com/maps/search/?api=1&query=' + mapQuery + '" target="_blank" rel="noopener">Open map</a>' +
+        '<a class="btn btn-ghost" href="tel:' + order.riderPhone.replace(/\\s/g, '') + '">Call rider</a>' +
+        '<a class="btn btn-ghost" href="tel:' + order.pharmacyPhone.replace(/\\s/g, '') + '">Call pharmacy</a>' +
+      '</div>' +
+    '</div>';
+}
+
+
+function initDashboard() {
+if (dashboardReady) {
+  return;
+}
+dashboardReady = true;
+var doses = [
+  { id: 'morning', name: 'Morning dose', time: '08:00 AM', status: 'pending', medId: null },
+  { id: 'afternoon', name: 'Afternoon dose', time: '02:00 PM', status: 'pending', medId: null },
+  { id: 'evening', name: 'Evening dose', time: '08:00 PM', status: 'pending', medId: null }
+];
+var log = [];
+var trackingTimer = null;
+
+// restore previously chosen medicine per slot, if any
+var savedDoseMeds = ssGetDoseMeds();
+doses.forEach(function (d) {
+  if (savedDoseMeds[d.id]) d.medId = savedDoseMeds[d.id];
+});
+
+var doseListEl = document.getElementById('doseList');
+var logListEl = document.getElementById('logList');
+var logEmptyEl = document.getElementById('logEmpty');
+var statTakenEl = document.getElementById('statTaken');
+var statNextEl = document.getElementById('statNext');
+var statOrdersEl = document.getElementById('statOrders');
+var dashLed = document.getElementById('dashLed');
+var dashBuzzer = document.getElementById('dashBuzzer');
+var dashTray = document.getElementById('dashTray');
+var dashStatusLine = document.getElementById('dashStatusLine');
+var userTag = document.getElementById('userTag');
+var orderTrackingList = document.getElementById('orderTrackingList');
+var orderTrackingEmpty = document.getElementById('orderTrackingEmpty');
+
+userTag.textContent = localStorage.getItem('ss_user') || 'admin';
+
+document.getElementById('clearLog').addEventListener('click', function () {
+  log = [];
+  renderLog();
+});
+
+function ownedMedName(medId) {
+  var m = ssGetOwnedMeds().find(function (x) { return x.id === medId; });
+  return m ? m.name : null;
+}
+
+function renderDoses() {
+  var owned = ssGetOwnedMeds();
+  doseListEl.innerHTML = '';
+  doses.forEach(function (dose) {
+    var row = document.createElement('div');
+    row.className = 'dose-row' + (dose.status === 'taken' ? ' taken' : '');
+
+    var info = document.createElement('div');
+    info.className = 'dose-info';
+    info.style.flex = '1';
+    var medLabel = dose.medId ? ownedMedName(dose.medId) : 'No medicine selected';
+
+    var selectHtml = '';
+    if (owned.length === 0) {
+      selectHtml = '<div class="dose-time" style="margin-top:4px;">Order a medicine first to load this slot</div>';
+    } else {
+      selectHtml =
+        '<select class="qty-stepper" style="margin-top:6px; padding:6px 10px; border-radius:8px; font-family:var(--body); font-size:13px;" data-dose="' + dose.id + '" ' + (dose.status !== 'pending' ? 'disabled' : '') + '>' +
+        '<option value="">Select medicine…</option>' +
+        owned.map(function (m) {
+          return '<option value="' + m.id + '"' + (dose.medId === m.id ? ' selected' : '') + '>' + m.name + '</option>';
+        }).join('') +
+        '</select>';
+    }
+
+    info.innerHTML =
+      '<span class="dose-dot"></span>' +
+      '<div style="flex:1;"><div class="dose-name">' + dose.name + '</div>' +
+      '<div class="dose-time">' + dose.time + ' · ' + medLabel + '</div>' +
+      selectHtml +
+      '</div>';
+    row.appendChild(info);
+
+    var right = document.createElement('div');
+    right.style.display = 'flex';
+    right.style.alignItems = 'center';
+    right.style.gap = '10px';
+
+    var badge = document.createElement('span');
+    badge.className = 'dose-badge';
+    badge.textContent = dose.status === 'taken' ? 'Taken' : dose.status === 'ready' ? 'Ready' : dose.status === 'active' ? 'Dispensing' : 'Pending';
+    right.appendChild(badge);
+
+    var btn = document.createElement('button');
+    if (dose.status === 'pending') {
+      btn.textContent = 'Trigger reminder';
+      btn.disabled = !dose.medId;
+      btn.title = dose.medId ? '' : 'Select a medicine for this slot first';
+      btn.addEventListener('click', function () { triggerDose(dose.id); });
+    } else if (dose.status === 'active') {
+      btn.textContent = 'Dispensing…';
+      btn.disabled = true;
+    } else if (dose.status === 'ready') {
+      btn.textContent = 'Mark as taken';
+      btn.className = 'taken-btn';
+      btn.addEventListener('click', function () { markTaken(dose.id); });
+    } else {
+      btn.textContent = 'Done';
+      btn.disabled = true;
+    }
+    right.appendChild(btn);
+    row.appendChild(right);
+    doseListEl.appendChild(row);
+  });
+
+  doseListEl.querySelectorAll('select').forEach(function (sel) {
+    sel.addEventListener('change', function () {
+      var doseId = sel.getAttribute('data-dose');
+      var dose = doses.find(function (d) { return d.id === doseId; });
+      dose.medId = sel.value || null;
+      var map = ssGetDoseMeds();
+      map[doseId] = dose.medId;
+      ssSaveDoseMeds(map);
+      renderDoses();
+    });
+  });
+
+  var taken = doses.filter(function (d) { return d.status === 'taken'; }).length;
+  statTakenEl.textContent = taken + ' / ' + doses.length;
+
+  var next = doses.find(function (d) { return d.status !== 'taken'; });
+  statNextEl.textContent = next ? (next.name.replace(' dose', '') + ' · ' + next.time) : 'All doses complete';
+}
+
+function renderLog() {
+  logListEl.innerHTML = '';
+  if (log.length === 0) {
+    logEmptyEl.style.display = 'block';
+    return;
+  }
+  logEmptyEl.style.display = 'none';
+  log.forEach(function (entry) {
+    var li = document.createElement('li');
+    li.textContent = entry;
+    logListEl.appendChild(li);
+  });
+}
+
+function renderOrderTracking() {
+  var orders = ssGetOrders();
+  orderTrackingList.innerHTML = '';
+  if (orders.length === 0) {
+    orderTrackingEmpty.style.display = 'block';
+    statOrdersEl.textContent = '0';
+    return;
+  }
+  orderTrackingEmpty.style.display = 'none';
+
+  var inTransit = orders.filter(function (o) { return o.stage < TRACKING_STAGES.length - 1; }).length;
+  statOrdersEl.textContent = String(inTransit);
+
+  orders.slice(0, 3).forEach(function (o) {
+    var row = document.createElement('div');
+    row.className = 'oh-row';
+    row.innerHTML = trackingHtml(o);
+    orderTrackingList.appendChild(row);
+  });
+}
+
+function startOrderTrackingLoop() {
+  if (trackingTimer) return;
+  trackingTimer = setInterval(function () {
+    var changed = ssAdvanceOrderTracking();
+    renderOrderTracking();
+    if (!changed) {
+      clearInterval(trackingTimer);
+      trackingTimer = null;
+    }
+  }, 3500);
+}
+
+function nowTime() {
+  return new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+}
+
+function triggerDose(id) {
+  var dose = doses.find(function (d) { return d.id === id; });
+  if (!dose || dose.status !== 'pending' || !dose.medId) return;
+
+  var medName = ownedMedName(dose.medId) || 'medicine';
+  dose.status = 'active';
+  renderDoses();
+  dashStatusLine.textContent = 'Alert: ' + dose.name + ' (' + medName + ') — buzzer and LED active…';
+  dashLed.classList.add('active');
+  dashBuzzer.classList.add('active');
+  log.unshift(dose.name + ' — ' + medName + ' — reminder triggered at ' + nowTime());
+  renderLog();
+
+  setTimeout(function () {
+    dashLed.classList.remove('active');
+    dashBuzzer.classList.remove('active');
+    dashTray.classList.add('out');
+    dose.status = 'ready';
+    dashStatusLine.textContent = medName + ' ready in tray — please collect.';
+    log.unshift(medName + ' dispensed into tray at ' + nowTime());
+    renderDoses();
+    renderLog();
+  }, 1500);
+}
+
+function markTaken(id) {
+  var dose = doses.find(function (d) { return d.id === id; });
+  if (!dose || dose.status !== 'ready') return;
+
+  var medName = ownedMedName(dose.medId) || 'medicine';
+  dashTray.classList.remove('out');
+  dose.status = 'taken';
+  dashStatusLine.textContent = 'Tray reset. Waiting for next scheduled dose…';
+  log.unshift(medName + ' collected at ' + nowTime());
+  renderDoses();
+  renderLog();
+}
+
+function tickClock() {
+  document.getElementById('clockText').textContent = nowTime();
+}
+
+renderDoses();
+renderLog();
+renderOrderTracking();
+startOrderTrackingLoop();
+tickClock();
+setInterval(tickClock, 1000);
+
+  document.getElementById('logoutBtn').addEventListener('click', function(e){
+    e.preventDefault();
+    loggedIn = false;
+    localStorage.removeItem('ss_logged_in');
+    sessionStorage.removeItem('sehatsaathiLoggedIn');
+    showView('loginView');
+  });
+}
+
+function initOrder() {
+if (orderReady) {
+  return;
+}
+orderReady = true;
+var catalog = [
+  // -- medicines --
+  { id: 'para', name: 'Paracetamol 500mg', desc: 'Strip of 10 tablets · fever & pain relief', price: 25, stock: 'in', cat: 'medicine' },
+  { id: 'dolo', name: 'Dolo 650', desc: 'Strip of 15 tablets · fever & pain relief', price: 30, stock: 'in', cat: 'medicine' },
+  { id: 'crocin', name: 'Crocin Advance', desc: 'Strip of 15 tablets · fast fever relief', price: 35, stock: 'in', cat: 'medicine' },
+  { id: 'digene', name: 'Digene Antacid', desc: 'Bottle of 200ml · acidity & gas relief', price: 95, stock: 'in', cat: 'medicine' },
+  { id: 'electral', name: 'Electral ORS', desc: 'Sachet pack of 6 · rehydration', price: 45, stock: 'in', cat: 'medicine' },
+  { id: 'cetzine', name: 'Cetirizine (Cetzine)', desc: 'Strip of 10 tablets · allergy relief', price: 18, stock: 'low', cat: 'medicine' },
+  { id: 'volini', name: 'Volini Gel', desc: 'Tube of 30g · muscle & joint pain', price: 110, stock: 'in', cat: 'medicine' },
+  { id: 'vicks', name: 'Vicks Vaporub', desc: 'Jar of 50ml · cold & cough relief', price: 95, stock: 'in', cat: 'medicine' },
+  { id: 'betadine', name: 'Betadine Ointment', desc: 'Tube of 20g · wound care', price: 65, stock: 'in', cat: 'medicine' },
+  { id: 'vitd', name: 'Vitamin D3', desc: 'Bottle of 30 capsules · weekly dose', price: 140, stock: 'in', cat: 'medicine' },
+  { id: 'amlo', name: 'Amlodipine 5mg', desc: 'Strip of 15 tablets · blood pressure', price: 60, stock: 'low', cat: 'medicine' },
+  { id: 'metf', name: 'Metformin 500mg', desc: 'Strip of 15 tablets · blood sugar', price: 45, stock: 'in', cat: 'medicine' },
+  { id: 'multi', name: 'Daily Multivitamin', desc: 'Bottle of 60 tablets', price: 210, stock: 'in', cat: 'medicine' },
+  { id: 'calc', name: 'Calcium + D3', desc: 'Strip of 15 tablets · bone health', price: 90, stock: 'low', cat: 'medicine' },
+  // -- home remedies --
+  { id: 'tulsi', name: 'Tulsi Drops', desc: 'Bottle of 30ml · immunity support', price: 150, stock: 'in', cat: 'remedy' },
+  { id: 'chyawan', name: 'Chyawanprash', desc: 'Jar of 500g · daily immunity', price: 220, stock: 'in', cat: 'remedy' },
+  { id: 'ajwain', name: 'Ajwain (Carom Seeds)', desc: 'Pack of 100g · digestion aid', price: 40, stock: 'in', cat: 'remedy' },
+  { id: 'gingerhoney', name: 'Ginger-Honey Paste', desc: 'Jar of 200g · cough & cold relief', price: 180, stock: 'in', cat: 'remedy' },
+  { id: 'haldi', name: 'Turmeric (Haldi) Powder', desc: 'Pack of 200g · anti-inflammatory', price: 60, stock: 'in', cat: 'remedy' },
+  { id: 'giloy', name: 'Giloy Tablets', desc: 'Bottle of 60 tablets · immunity', price: 160, stock: 'low', cat: 'remedy' },
+  { id: 'triphala', name: 'Triphala Churna', desc: 'Pack of 100g · digestion support', price: 130, stock: 'in', cat: 'remedy' },
+  { id: 'kadha', name: 'Kadha Mix', desc: 'Pack of 10 sachets · immunity decoction', price: 90, stock: 'in', cat: 'remedy' }
+];
+
+var qty = {};
+catalog.forEach(function (m) { qty[m.id] = 1; });
+var cart = {};
+var activeCat = 'all';
+var trackingTimer = null;
+
+var medGrid = document.getElementById('medGrid');
+var cartItemsEl = document.getElementById('cartItems');
+var cartEmptyEl = document.getElementById('cartEmpty');
+var cartTotalEl = document.getElementById('cartTotal');
+var orderHistoryList = document.getElementById('orderHistoryList');
+var ohEmptyEl = document.getElementById('ohEmpty');
+var orderConfirm = document.getElementById('orderConfirm');
+var orderIdEl = document.getElementById('orderId');
+var deliveryLocationEl = document.getElementById('deliveryLocation');
+var useGpsBtn = document.getElementById('useGpsBtn');
+
+document.getElementById('catTabs').addEventListener('click', function (e) {
+  var btn = e.target.closest('.cat-tab');
+  if (!btn) return;
+  activeCat = btn.getAttribute('data-cat');
+  document.querySelectorAll('.cat-tab').forEach(function (t) { t.classList.remove('active'); });
+  btn.classList.add('active');
+  renderCatalog();
+});
+
+if (useGpsBtn && deliveryLocationEl) {
+  useGpsBtn.addEventListener('click', function () {
+    if (!navigator.geolocation) {
+      deliveryLocationEl.value = 'GPS not available in this browser';
+      return;
+    }
+
+    useGpsBtn.textContent = 'Getting location...';
+    navigator.geolocation.getCurrentPosition(function (position) {
+      var lat = position.coords.latitude.toFixed(5);
+      var lng = position.coords.longitude.toFixed(5);
+      deliveryLocationEl.value = 'Current GPS: ' + lat + ', ' + lng;
+      useGpsBtn.textContent = 'Use GPS location';
+    }, function () {
+      deliveryLocationEl.value = deliveryLocationEl.value || 'High Vision International School, Delhi Road';
+      useGpsBtn.textContent = 'GPS permission denied';
+      setTimeout(function () { useGpsBtn.textContent = 'Use GPS location'; }, 1800);
+    }, { enableHighAccuracy: true, timeout: 8000 });
+  });
+}
+
+function renderCatalog() {
+  medGrid.innerHTML = '';
+  var items = catalog.filter(function (m) { return activeCat === 'all' || m.cat === activeCat; });
+  items.forEach(function (m) {
+    var card = document.createElement('div');
+    card.className = 'med-card';
+    card.innerHTML =
+      '<div class="med-card-top">' +
+        '<div class="med-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2f5d50" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M4 12h16"/></svg></div>' +
+        '<span class="med-stock ' + (m.stock === 'low' ? 'low' : '') + '">' + (m.stock === 'low' ? 'Low stock' : 'In stock') + '</span>' +
+      '</div>' +
+      '<span class="med-tag ' + (m.cat === 'remedy' ? 'remedy' : '') + '">' + (m.cat === 'remedy' ? 'Home remedy' : 'Medicine') + '</span>' +
+      '<div class="med-name">' + m.name + '</div>' +
+      '<div class="med-desc">' + m.desc + '</div>' +
+      '<div class="qty-row">' +
+        '<div class="qty-stepper">' +
+          '<button data-act="dec" data-id="' + m.id + '">−</button>' +
+          '<span id="qty-' + m.id + '">' + qty[m.id] + '</span>' +
+          '<button data-act="inc" data-id="' + m.id + '">+</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="med-meta">' +
+        '<span class="med-price">₹' + m.price + '</span>' +
+        '<button class="btn btn-primary" data-act="add" data-id="' + m.id + '">Add to cart</button>' +
+      '</div>';
+    medGrid.appendChild(card);
+  });
+
+  medGrid.querySelectorAll('button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var id = btn.getAttribute('data-id');
+      var act = btn.getAttribute('data-act');
+      if (act === 'inc') { qty[id]++; }
+      if (act === 'dec') { qty[id] = Math.max(1, qty[id] - 1); }
+      if (act === 'add') { addToCart(id, qty[id]); }
+      document.getElementById('qty-' + id).textContent = qty[id];
+    });
+  });
+}
+
+function addToCart(id, amount) {
+  cart[id] = (cart[id] || 0) + amount;
+  renderCart();
+}
+
+function medById(id) { return catalog.find(function (m) { return m.id === id; }); }
+
+function renderCart() {
+  var ids = Object.keys(cart).filter(function (id) { return cart[id] > 0; });
+  cartItemsEl.innerHTML = '';
+  if (ids.length === 0) {
+    cartEmptyEl.style.display = 'block';
+    cartTotalEl.textContent = '₹0';
+    return;
+  }
+  cartEmptyEl.style.display = 'none';
+  var total = 0;
+  ids.forEach(function (id) {
+    var m = medById(id);
+    var lineTotal = m.price * cart[id];
+    total += lineTotal;
+    var row = document.createElement('div');
+    row.className = 'cart-item';
+    row.innerHTML =
+      '<div><div class="ci-name">' + m.name + '</div><div class="ci-sub">Qty ' + cart[id] + ' × ₹' + m.price + '</div></div>' +
+      '<span>₹' + lineTotal + '</span>';
+    cartItemsEl.appendChild(row);
+  });
+  cartTotalEl.textContent = '₹' + total;
+}
+
+function renderHistory() {
+  var orders = ssGetOrders();
+  orderHistoryList.innerHTML = '';
+  if (orders.length === 0) {
+    ohEmptyEl.style.display = 'block';
+    return;
+  }
+  ohEmptyEl.style.display = 'none';
+  orders.forEach(function (o) {
+    var row = document.createElement('div');
+    row.className = 'oh-row';
+    row.innerHTML = trackingHtml(o);
+    orderHistoryList.appendChild(row);
+  });
+}
+
+function startTrackingLoop() {
+  if (trackingTimer) return;
+  trackingTimer = setInterval(function () {
+    var changed = ssAdvanceOrderTracking();
+    renderHistory();
+    if (!changed) {
+      clearInterval(trackingTimer);
+      trackingTimer = null;
+    }
+  }, 3500);
+}
+
+document.getElementById('placeOrderBtn').addEventListener('click', function () {
+  var ids = Object.keys(cart).filter(function (id) { return cart[id] > 0; });
+  if (ids.length === 0) return;
+
+  var total = 0;
+  var names = [];
+  var items = [];
+  ids.forEach(function (id) {
+    var m = medById(id);
+    total += m.price * cart[id];
+    names.push(m.name + ' ×' + cart[id]);
+    items.push({ id: m.id, name: m.name, qty: cart[id] });
+  });
+
+  var orderId = 'SS-' + Math.floor(1000 + Math.random() * 9000);
+  var orders = ssGetOrders();
+  var order = {
+    id: orderId,
+    itemSummary: names.join(', '),
+    total: total,
+    time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }),
+    stage: 0,
+    items: items,
+    deliveryLocation: deliveryLocationEl && deliveryLocationEl.value.trim() ? deliveryLocationEl.value.trim() : 'High Vision International School, Delhi Road',
+    riderPhone: '+91 98765 43210',
+    pharmacyPhone: '+91 98100 11223'
+  };
+  hydrateOrderTracking(order);
+  orders.unshift(order);
+  ssSaveOrders(orders);
+
+  // add newly ordered medicines to the owned-medicines pool for the dashboard
+  var owned = ssGetOwnedMeds();
+  items.forEach(function (it) {
+    if (!owned.find(function (o) { return o.id === it.id; })) {
+      owned.push({ id: it.id, name: it.name });
+    }
+  });
+  ssSaveOwnedMeds(owned);
+
+  orderIdEl.textContent = orderId;
+  orderConfirm.classList.add('show');
+  cart = {};
+  renderCart();
+  renderHistory();
+  startTrackingLoop();
+
+  setTimeout(function () { orderConfirm.classList.remove('show'); }, 5000);
+});
+
+renderCatalog();
+renderCart();
+renderHistory();
+startTrackingLoop();
+
+}
+
+function initAI() {
+  if (aiReady) return;
+  aiReady = true;
+
+  var messages = document.getElementById('aiMessages');
+  var input = document.getElementById('aiInput');
+  var sendBtn = document.getElementById('aiSendBtn');
+
+  function addMessage(role, text) {
+    var bubble = document.createElement('div');
+    bubble.className = 'ai-message ' + role;
+    bubble.textContent = text;
+    messages.appendChild(bubble);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function replyFor(text) {
+    var q = text.toLowerCase();
+    if (q.indexOf('breath') !== -1 || q.indexOf('chest') !== -1 || q.indexOf('emergency') !== -1) {
+      return 'Breathing trouble, chest pain, fainting, confusion, or blue lips are emergency signs. Please contact emergency care or a nearby doctor immediately.';
+    }
+    if (q.indexOf('fever') !== -1 || q.indexOf('headache') !== -1) {
+      return 'For fever/headache: rest, drink fluids, note temperature, and use only medicines already advised by a doctor. If fever is high, lasts more than 2 days, or has breathing trouble/rash, book a doctor.';
+    }
+    if (q.indexOf('cough') !== -1 || q.indexOf('cold') !== -1) {
+      return 'For cough/cold: warm fluids, steam, and rest may help. Avoid self-starting antibiotics. If symptoms are severe, with fever, wheezing, or last more than 3 days, consult a doctor.';
+    }
+    if (q.indexOf('medicine') !== -1 || q.indexOf('dose') !== -1 || q.indexOf('timing') !== -1) {
+      return 'Use the dashboard dose slots to select ordered medicines, then trigger reminder. Follow the prescription timing; do not change dose without a doctor.';
+    }
+    if (q.indexOf('appointment') !== -1 || q.indexOf('doctor') !== -1) {
+      return 'Open Appointments to choose from multiple doctors. Each card has speciality, clinic location, phone number, call link, map link, and a booking button.';
+    }
+    if (q.indexOf('track') !== -1 || q.indexOf('order') !== -1 || q.indexOf('gps') !== -1) {
+      return 'Open Order Medicine or Recent orders. Every placed order shows stage, ETA, distance, GPS-style location, map link, rider phone, and pharmacy phone.';
+    }
+    return 'I can help with common symptoms, medicine reminders, appointment booking, and GPS order tracking. Tell me your symptom or what you want to do.';
+  }
+
+  function send() {
+    var text = input.value.trim();
+    if (!text) return;
+    addMessage('user', text);
+    input.value = '';
+    setTimeout(function () { addMessage('bot', replyFor(text)); }, 250);
+  }
+
+  addMessage('bot', 'Namaste. I am SehatSaathi assistant. Ask about symptoms, medicine timing, doctor booking, or order tracking.');
+  sendBtn.addEventListener('click', send);
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') send();
+  });
+  document.querySelectorAll('.ai-suggestion').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      input.value = btn.textContent;
+      send();
+    });
+  });
+}
+
+function initSymptomChecker() {
+  if (symptomReady) return;
+  symptomReady = true;
+
+  var result = document.getElementById('symptomResult');
+  result.addEventListener('click', function (e) {
+    var link = e.target.closest('[data-view]');
+    if (!link) return;
+    e.preventDefault();
+    showView(link.getAttribute('data-view'));
+  });
+
+  document.getElementById('checkSymptomsBtn').addEventListener('click', function () {
+    var selected = Array.prototype.slice.call(document.querySelectorAll('#symptomOptions input:checked')).map(function (box) {
+      return box.value;
+    });
+    var age = document.getElementById('symptomAge').value.trim();
+    var duration = document.getElementById('symptomDuration').value.trim();
+    var urgent = selected.indexOf('breathing') !== -1 || selected.indexOf('vomiting') !== -1 && selected.indexOf('fever') !== -1;
+    var title = urgent ? 'Doctor help recommended now' : 'Basic care guidance';
+    var tips = [];
+
+    if (selected.length === 0) {
+      result.className = 'symptom-result show';
+      result.innerHTML = '<h3>Select at least one symptom</h3><p>Please choose symptoms first.</p>';
+      return;
+    }
+
+    if (selected.indexOf('fever') !== -1) tips.push('Monitor temperature, drink fluids, and rest.');
+    if (selected.indexOf('cough') !== -1 || selected.indexOf('cold') !== -1) tips.push('Warm fluids and steam may help; avoid dust and cold drinks.');
+    if (selected.indexOf('headache') !== -1) tips.push('Rest in a quiet room and drink water.');
+    if (selected.indexOf('stomach') !== -1 || selected.indexOf('vomiting') !== -1) tips.push('Use ORS/sips of water and avoid oily food.');
+    if (selected.indexOf('allergy') !== -1) tips.push('Avoid the suspected trigger and ask a doctor before taking allergy medicine.');
+    if (selected.indexOf('bodypain') !== -1) tips.push('Rest, hydration, and checking fever can help identify the cause.');
+    if (selected.indexOf('breathing') !== -1) tips.push('Breathing trouble is urgent. Contact emergency care or a doctor.');
+
+    result.className = 'symptom-result show' + (urgent ? ' urgent' : '');
+    result.innerHTML =
+      '<h3>' + title + '</h3>' +
+      '<p>' + (age ? 'Age: ' + age + '. ' : '') + (duration ? 'Duration: ' + duration + '. ' : '') + 'This is demo guidance, not a medical diagnosis.</p>' +
+      '<ul>' + tips.map(function (tip) { return '<li>' + tip + '</li>'; }).join('') + '</ul>' +
+      '<div class="appt-actions" style="margin-top:14px;"><a href="#" data-view="appointmentsView" class="btn btn-primary">Book doctor</a><a href="#" data-view="aiAssistantView" class="btn btn-ghost">Ask AI</a></div>';
+  });
+}
+
+function initAppointments() {
+  if (appointmentsReady) return;
+  appointmentsReady = true;
+
+  var doctors = [
+    { name: 'Dr. Ananya Sharma', initials: 'AS', specialty: 'General Physician', location: 'Rohini', address: 'CarePlus Clinic, Sector 7 Rohini', phone: '+91 98765 21001', time: 'Today 5:30 PM', distance: '1.8 km' },
+    { name: 'Dr. Rohan Mehta', initials: 'RM', specialty: 'Pediatrician', location: 'Pitampura', address: 'Child First Clinic, Pitampura Main Road', phone: '+91 98765 21002', time: 'Tomorrow 10:00 AM', distance: '3.1 km' },
+    { name: 'Dr. Kavita Rao', initials: 'KR', specialty: 'Cardiologist', location: 'Dwarka', address: 'HeartCare Centre, Dwarka Sector 12', phone: '+91 98765 21003', time: 'Today 7:00 PM', distance: '5.4 km' },
+    { name: 'Dr. Nikhil Bansal', initials: 'NB', specialty: 'Dermatologist', location: 'Paschim Vihar', address: 'Skin & Wellness Clinic, Paschim Vihar', phone: '+91 98765 21004', time: 'Tomorrow 12:30 PM', distance: '4.2 km' },
+    { name: 'Dr. Meera Kapoor', initials: 'MK', specialty: 'Orthopedic', location: 'Rohini', address: 'BoneCare Ortho Clinic, Rohini Sector 11', phone: '+91 98765 21005', time: 'Today 6:15 PM', distance: '2.5 km' },
+    { name: 'Dr. Sameer Khan', initials: 'SK', specialty: 'General Physician', location: 'Pitampura', address: 'Family Health Point, Pitampura', phone: '+91 98765 21006', time: 'Tomorrow 9:30 AM', distance: '3.6 km' }
+  ];
+
+  var list = document.getElementById('doctorList');
+  var specialtyFilter = document.getElementById('specialtyFilter');
+  var locationFilter = document.getElementById('locationFilter');
+  var status = document.getElementById('appointmentStatus');
+  var bookedList = document.getElementById('bookedAppointments');
+
+  function getBookings() {
+    try { return JSON.parse(localStorage.getItem('ss_appointments') || '[]'); } catch (e) { return []; }
+  }
+
+  function saveBookings(bookings) {
+    localStorage.setItem('ss_appointments', JSON.stringify(bookings));
+  }
+
+  function renderBookings() {
+    var bookings = getBookings();
+    bookedList.innerHTML = '';
+    status.style.display = bookings.length ? 'none' : 'block';
+    bookings.forEach(function (b) {
+      var li = document.createElement('li');
+      li.textContent = b.doctor + ' · ' + b.specialty + ' · ' + b.time + ' · ' + b.phone;
+      bookedList.appendChild(li);
+    });
+  }
+
+  function renderDoctors() {
+    var specialty = specialtyFilter.value;
+    var location = locationFilter.value;
+    list.innerHTML = '';
+    doctors.filter(function (d) {
+      return (specialty === 'all' || d.specialty === specialty) && (location === 'all' || d.location === location);
+    }).forEach(function (d, index) {
+      var card = document.createElement('div');
+      card.className = 'appt-card';
+      card.innerHTML =
+        '<div class="doc-avatar">' + d.initials + '</div>' +
+        '<div class="appt-info">' +
+          '<h3>' + d.name + '</h3>' +
+          '<div class="appt-meta">' + d.specialty + ' · ' + d.location + ' · ' + d.distance + '</div>' +
+          '<p>' + d.address + '</p>' +
+          '<div class="appt-meta">Phone: ' + d.phone + ' · Slot: ' + d.time + '</div>' +
+          '<div class="appt-actions">' +
+            '<a class="btn btn-ghost" href="tel:' + d.phone.replace(/\\s/g, '') + '">Call</a>' +
+            '<a class="btn btn-ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(d.address) + '">Location</a>' +
+            '<button class="btn btn-primary" type="button" data-book="' + index + '">Book</button>' +
+          '</div>' +
+        '</div>';
+      list.appendChild(card);
+    });
+  }
+
+  list.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-book]');
+    if (!btn) return;
+    var visibleDoctors = doctors.filter(function (d) {
+      return (specialtyFilter.value === 'all' || d.specialty === specialtyFilter.value) && (locationFilter.value === 'all' || d.location === locationFilter.value);
+    });
+    var doctor = visibleDoctors[Number(btn.getAttribute('data-book'))];
+    var bookings = getBookings();
+    bookings.unshift({ doctor: doctor.name, specialty: doctor.specialty, time: doctor.time, phone: doctor.phone, location: doctor.location });
+    saveBookings(bookings.slice(0, 5));
+    renderBookings();
+    btn.textContent = 'Booked';
+  });
+
+  specialtyFilter.addEventListener('change', renderDoctors);
+  locationFilter.addEventListener('change', renderDoctors);
+  renderDoctors();
+  renderBookings();
+}
+
+if (loggedIn) {
+  var defaultView = window.location.pathname.toLowerCase().indexOf('medicine') !== -1 ? 'orderView' : 'dashboardView';
+  showView(defaultView);
+} else {
+  showView('loginView');
+}
+</script>
+</body>
+</html>
